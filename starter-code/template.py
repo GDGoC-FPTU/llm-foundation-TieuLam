@@ -12,7 +12,7 @@ Instructions:
 import os
 import time
 from typing import Any, Callable
-from openai import OpenAI
+import openai
 from google import genai
 from google.genai import types
 import anthropic
@@ -72,7 +72,7 @@ def call_openai(
         # response.usage contains input_tokens and output_tokens (prompt_tokens/completion_tokens)
     """
 
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     
     # Định dạng tin nhắn
     messages = [{"role": "user", "content": prompt}]
@@ -101,7 +101,6 @@ def call_openai(
         'output_tokens': response.usage.completion_tokens
     }
 
-        
         # Trả về kết quả dưới dạng dictionary
     return answer, round(latency, 4), usage
     raise NotImplementedError("Implement call_openai")
@@ -467,7 +466,7 @@ if __name__ == "__main__":
 
     print("\n=== Starting Gemini 2.5 Chatbot (type 'quit' to exit) ===")
     
-    text, latency, usage = call_openai("Hello")
+    text, latency, usage = call_gemini("Hello")
     try:
         streaming_chatbot()
     except Exception as e:
