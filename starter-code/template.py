@@ -96,18 +96,14 @@ def call_openai(
     answer = response.choices[0].message.content
         
         # Lấy thông tin Token Usage
-    input_tokens = response.usage.prompt_tokens
-    output_tokens = response.usage.completion_tokens
+    usage = {
+        'input_tokens': response.usage.prompt_tokens,
+        'output_tokens': response.usage.completion_tokens
+    }
+
         
         # Trả về kết quả dưới dạng dictionary
-    return {
-        "response_text": answer,
-        "latency_seconds": round(latency, 4),
-        "usage": {
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens
-            }
-        }
+    return answer, round(latency, 4), usage
     raise NotImplementedError("Implement call_openai")
 
 
@@ -180,18 +176,14 @@ def call_gemini(
     answer = response.text
     
     # Lấy thông tin Token Usage
-    input_tokens = response.usage_metadata.prompt_token_count
-    output_tokens = response.usage_metadata.candidates_token_count
+    usage = {
+        'input_tokens': response.usage_metadata.prompt_token_count,
+        'output_tokens': response.usage_metadata.candidates_token_count
+    }
+
     
     # Trả về kết quả dưới dạng dictionary
-    return {
-        "response_text": answer,
-        "latency_seconds": round(latency, 4),
-        "usage": {
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens
-        }
-    }
+    return answer, round(latency, 4), usage
 
     raise NotImplementedError("Implement call_gemini")
 
@@ -474,6 +466,8 @@ if __name__ == "__main__":
         print("Set your API keys to run manual tests.")
 
     print("\n=== Starting Gemini 2.5 Chatbot (type 'quit' to exit) ===")
+    
+    text, latency, usage = call_openai("Hello")
     try:
         streaming_chatbot()
     except Exception as e:
