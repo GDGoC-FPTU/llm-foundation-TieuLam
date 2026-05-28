@@ -14,7 +14,9 @@ import sys
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+from dotenv import load_dotenv
 
+load_dotenv()
 # Locate directories relative to this test file
 TESTS_DIR = Path(__file__).parent
 LAB_DIR = TESTS_DIR.parent

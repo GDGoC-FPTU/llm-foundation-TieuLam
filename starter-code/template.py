@@ -16,7 +16,9 @@ from openai import OpenAI
 from google import genai
 from google.genai import types
 import anthropic
+from dotenv import load_dotenv
 
+load_dotenv()
 # ---------------------------------------------------------------------------
 # Estimated costs per 1M INPUT & OUTPUT tokens (USD) as of March 2026
 # Vietnamese text generally consumes ~1.5x - 2.0x more tokens than English due to Unicode/diacritics.
@@ -69,6 +71,7 @@ def call_openai(
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         # response.usage contains input_tokens and output_tokens (prompt_tokens/completion_tokens)
     """
+
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     
     # Định dạng tin nhắn
@@ -280,19 +283,18 @@ def compare_models(prompt: str) -> dict:
             - "gpt4o_mini": { "response": str, "latency": float, "cost": float, "input_tokens": int, "output_tokens": int }
             - "gemini_flash": { "response": str, "latency": float, "cost": float, "input_tokens": int, "output_tokens": int }
     """
-    gpt4o_res = call_openai(prompt, model=OPENAI_MODEL)
-    gpt4o_mini_res = call_openai(prompt, model=OPENAI_MINI_MODEL)
-    gemini_res = call_gemini(prompt, model=GEMINI_MODEL)
-    # TODO: Call call_openai with default gpt-4o model
-    # TODO: Call call_openai with gpt-4o-mini model
-    # TODO: Call call_gemini with default gemini-2.5-flash model
-    # TODO: Calculate costs exactly based on input and output token counts using PRICING_1M_TOKENS
-    #       Formula: Cost = (input_tokens * input_rate_per_1M + output_tokens * output_rate_per_1M) / 1,000,000
-    # TODO: Assemble and return the comparison dictionary.
+    gpt4o_res, gpt4o_latency, gpt4o_usage = call_openai(prompt, model=OPENAI_MODEL)
+    gpt4o_mini_res, gpt4o_mini_latency, gpt4o_mini_usage = call_openai(prompt, model=OPENAI_MINI_MODEL)
+    gemini_res, gemini_latency, gemini_usage = call_gemini(prompt, model=GEMINI_MODEL)
+
+    gpt4o_cost = (gpt4o_usage["input_tokens"] * PRICING_1M_TOKENS[OPENAI_MODEL]["input"] + gpt4o_usage["output_tokens"] * PRICING_1M_TOKENS[OPENAI_MODEL]["output"]) / 1000000
+    gpt4o_mini_cost = (gpt4o_mini_usage["input_tokens"] * PRICING_1M_TOKENS[OPENAI_MINI_MODEL]["input"] + gpt4o_mini_usage["output_tokens"] * PRICING_1M_TOKENS[OPENAI_MINI_MODEL]["output"]) / 1000000
+    gemini_cost = (gemini_usage["input_tokens"] * PRICING_1M_TOKENS[GEMINI_MODEL]["input"] + gemini_usage["output_tokens"] * PRICING_1M_TOKENS[GEMINI_MODEL]["output"]) / 1000000
+
     return {
-        "gpt4o": { "response": gpt4o_res["answer"], "latency": gpt4o_res["latency_seconds"], "cost": (gpt4o_res["usage"]["input_tokens"] * PRICING_1M_TOKENS[OPENAI_MODEL]["input"] + gpt4o_res["usage"]["output_tokens"] * PRICING_1M_TOKENS[OPENAI_MODEL]["output"]) / 1000000, "input_tokens": gpt4o_res["usage"]["input_tokens"], "output_tokens": gpt4o_res["usage"]["output_tokens"] },
-        "gpt4o_mini": { "response": gpt4o_mini_res["answer"], "latency": gpt4o_mini_res["latency_seconds"], "cost": (gpt4o_mini_res["usage"]["input_tokens"] * PRICING_1M_TOKENS[OPENAI_MINI_MODEL]["input"] + gpt4o_mini_res["usage"]["output_tokens"] * PRICING_1M_TOKENS[OPENAI_MINI_MODEL]["output"]) / 1000000, "input_tokens": gpt4o_mini_res["usage"]["input_tokens"], "output_tokens": gpt4o_mini_res["usage"]["output_tokens"] },
-        "gemini_flash": { "response": gemini_res["answer"], "latency": gemini_res["latency_seconds"], "cost": (gemini_res["usage"]["input_tokens"] * PRICING_1M_TOKENS[GEMINI_MODEL]["input"] + gemini_res["usage"]["output_tokens"] * PRICING_1M_TOKENS[GEMINI_MODEL]["output"]) / 1000000, "input_tokens": gemini_res["usage"]["input_tokens"], "output_tokens": gemini_res["usage"]["output_tokens"] }
+        "gpt4o": { "response": gpt4o_res, "latency": gpt4o_latency, "cost": gpt4o_cost, "input_tokens": gpt4o_usage["input_tokens"], "output_tokens": gpt4o_usage["output_tokens"] },
+        "gpt4o_mini": { "response": gpt4o_mini_res, "latency": gpt4o_mini_latency, "cost": gpt4o_mini_cost, "input_tokens": gpt4o_mini_usage["input_tokens"], "output_tokens": gpt4o_mini_usage["output_tokens"] },
+        "gemini_flash": { "response": gemini_res, "latency": gemini_latency, "cost": gemini_cost, "input_tokens": gemini_usage["input_tokens"], "output_tokens": gemini_usage["output_tokens"] }
     }
     raise NotImplementedError("Implement compare_models")
 
@@ -316,61 +318,79 @@ def streaming_chatbot() -> None:
     """
     # TODO: Setup interactive session, prompt user for input, stream response, and update history.
     
-    genai.configure(api_key=os.getenv("OPENAI_API_KEY"))
-    model = genai.GenerativeModel(OPENAI_MODEL)
+    try:
+        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    except Exception as e:
+        print(f"Initialization Error: Ensure GEMINI_API_KEY is set. Details: {e}")
+        return
+
+    # 2. Initialize history list to hold conversation turns
+    # Each turn contains a user message and a model response. 
+    # 3 turns = 6 messages total (3 user, 3 model).
+    conversation_history = []
     
-    print(f"=== Started Chat Session ({OPENAI_MODEL}) ===")
-    print("Type 'quit' or 'exit' to end the session.\n")
+    print("=" * 60)
+    print("Gemini 2.5 Flash Terminal Chatbot Initialized.")
+    print("Type 'exit' or 'quit' to end the session.")
+    print("=" * 60)
 
-    # 2. Maintain conversation history (list of message dicts)
-    history = []
-    MAX_TURNS = 3
-    # 3 turns = 3 user messages + 3 model responses (6 items total)
-    MAX_HISTORY_ITEMS = MAX_TURNS * 2
     while True:
-        # Get user input
-        user_input = input("\033[94mYou:\033[0m ")
-        
-        # Check exit conditions
-        if user_input.strip().lower() in ['quit', 'exit']:
-            print("Ending session. Goodbye!")
+        try:
+            # Get user input
+            user_input = input("\nYou: ").strip()
+            
+            # Check for exit commands
+            if user_input.lower() in ['exit', 'quit']:
+                print("\nGoodbye!")
+                break
+                
+            # Skip empty inputs
+            if not user_input:
+                continue
+
+            # 3. Append the new user message to the history list
+            conversation_history.append(
+                types.Content(
+                    role="user",
+                    parts=[types.Part.from_text(text=user_input)]
+                )
+            )
+
+            # 4. Enforce strict history limit: Keep only the last 3 turns (6 messages)
+            if len(conversation_history) > 6:
+                conversation_history = conversation_history[-6:]
+
+            print("Gemini: ", end="", flush=True)
+
+            # 5. Call the streaming API with the rolling history window
+            response_stream = client.models.generate_content_stream(
+                model="gemini-2.5-flash",
+                contents=conversation_history
+            )
+
+            # 6. Stream and aggregate response tokens
+            full_response_text = ""
+            for chunk in response_stream:
+                # Filter out metadata chunks that do not contain text elements
+                if chunk.text:
+                    print(chunk.text, end="", flush=True)
+                    full_response_text += chunk.text
+            print() # Print a final newline character after the stream concludes
+
+            # 7. Append the completed model response to the history list
+            conversation_history.append(
+                types.Content(
+                    role="model",
+                    parts=[types.Part.from_text(text=full_response_text)]
+                )
+            )
+
+        except KeyboardInterrupt:
+            print("\nSession interrupted. Goodbye!")
             break
-        
-        if not user_input.strip():
-            continue
-
-        # Append user message to history
-        history.append({"role": "user", "parts": [user_input]})
-
-        # Enforce the context window limit (keep only the most recent N items)
-        # We slice the list to retain only the allowed number of messages
-        if len(history) > MAX_HISTORY_ITEMS + 1:
-            # We do +1 because we just added the user message and haven't added the model's reply yet
-            # We want to keep the last (MAX_HISTORY_ITEMS - 1) prior messages + 1 new user message
-            history = history[-(MAX_HISTORY_ITEMS - 1):]
-
-        # 3. Call the model with streaming enabled
-        print("\033[92mGemini:\033[0m ", end="")
-        
-        response = model.generate_content(history, stream=True)
-        
-        # Stream the response chunks to the terminal as they arrive
-        full_response = ""
-        for chunk in response:
-            if chunk.text:
-                print(chunk.text, end="", flush=True)
-                full_response += chunk.text
-        
-        print("\n") # Add a newline after the full response finishes streaming
-
-        # 4. Append model response to history to complete the turn
-        history.append({"role": "model", "parts": [full_response]})
-        
-        # Final truncation to strictly ensure we only hold MAX_HISTORY_ITEMS
-        if len(history) > MAX_HISTORY_ITEMS:
-            history = history[-MAX_HISTORY_ITEMS:]
-
-    raise NotImplementedError("Implement streaming_chatbot")
+        except Exception as e:
+            print(f"\nAn error occurred: {e}")
+        """raise NotImplementedError("Implement streaming_chatbot")"""
 
 
 # ---------------------------------------------------------------------------
