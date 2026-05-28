@@ -180,7 +180,6 @@ def call_gemini(
     # Lấy thông tin Token Usage
     input_tokens = response.usage_metadata.prompt_token_count
     output_tokens = response.usage_metadata.candidates_token_count
-    total_tokens = response.usage_metadata.total_token_count
     
     # Trả về kết quả dưới dạng dictionary
     return {
@@ -291,9 +290,9 @@ def compare_models(prompt: str) -> dict:
     #       Formula: Cost = (input_tokens * input_rate_per_1M + output_tokens * output_rate_per_1M) / 1,000,000
     # TODO: Assemble and return the comparison dictionary.
     return {
-        "gpt4o": { "response": gpt4o_res["answer"], "latency": gpt4o_res["latency_seconds"], "cost": ((gpt4o_res["input_tokens"] * PRICING_1M_TOKENS[OPENAI_MODEL]["input"] + gpt4o_res["output_tokens"] * PRICING_1M_TOKENS[OPENAI_MODEL]["output"]) / 1,000,000), "input_tokens": gpt4o_res["input_tokens"], "output_tokens": gpt4o_res["output_tokens"] },
-        "gpt4o_mini": { "response": gpt4o_mini_res["answer"], "latency": gpt4o_mini_res["latency_seconds"], "cost": ((gpt4o_mini_res["input_tokens"] * PRICING_1M_TOKENS[OPENAI_MINI_MODEL]["input"] + gpt4o_mini_res["output_tokens"] * PRICING_1M_TOKENS[OPENAI_MINI_MODEL]["output"]) / 1,000,000), "input_tokens": gpt4o_mini_res["input_tokens"], "output_tokens": gpt4o_mini_res["output_tokens"] },
-        "gemini_flash": { "response": gemini_res["answer"], "latency": gemini_res["latency_seconds"], "cost": ((gemini_res["input_tokens"] * PRICING_1M_TOKENS[GEMINI_MODEL]["input"] + gemini_res["output_tokens"] * PRICING_1M_TOKENS[GEMINI_MODEL]["output"]) / 1,000,000), "input_tokens": gemini_res["input_tokens"], "output_tokens": gemini_res["output_tokens"] }
+        "gpt4o": { "response": gpt4o_res["answer"], "latency": gpt4o_res["latency_seconds"], "cost": (gpt4o_res["usage"]["input_tokens"] * PRICING_1M_TOKENS[OPENAI_MODEL]["input"] + gpt4o_res["usage"]["output_tokens"] * PRICING_1M_TOKENS[OPENAI_MODEL]["output"]) / 1000000, "input_tokens": gpt4o_res["usage"]["input_tokens"], "output_tokens": gpt4o_res["usage"]["output_tokens"] },
+        "gpt4o_mini": { "response": gpt4o_mini_res["answer"], "latency": gpt4o_mini_res["latency_seconds"], "cost": (gpt4o_mini_res["usage"]["input_tokens"] * PRICING_1M_TOKENS[OPENAI_MINI_MODEL]["input"] + gpt4o_mini_res["usage"]["output_tokens"] * PRICING_1M_TOKENS[OPENAI_MINI_MODEL]["output"]) / 1000000, "input_tokens": gpt4o_mini_res["usage"]["input_tokens"], "output_tokens": gpt4o_mini_res["usage"]["output_tokens"] },
+        "gemini_flash": { "response": gemini_res["answer"], "latency": gemini_res["latency_seconds"], "cost": (gemini_res["usage"]["input_tokens"] * PRICING_1M_TOKENS[GEMINI_MODEL]["input"] + gemini_res["usage"]["output_tokens"] * PRICING_1M_TOKENS[GEMINI_MODEL]["output"]) / 1000000, "input_tokens": gemini_res["usage"]["input_tokens"], "output_tokens": gemini_res["usage"]["output_tokens"] }
     }
     raise NotImplementedError("Implement compare_models")
 

@@ -46,8 +46,28 @@ Xem xét kịch bản: 10.000 người dùng hoạt động mỗi ngày, mỗi n
 
 ### Bài tập 2.3 — Trải Nghiệm Người Dùng với Streaming
 **Streaming quan trọng nhất trong trường hợp nào, và khi nào thì non-streaming lại phù hợp hơn?** (1 đoạn văn)
-> *Câu trả lời của bạn*
 
+1. Khi nào Streaming quan trọng nhất?
+    Streaming tỏa sáng trong các tình huống yêu cầu phản hồi ngay lập tức hoặc khi làm việc với dữ liệu vô hạn không bao giờ dừng lại.
+
+        - Tối ưu hóa trải nghiệm người dùng (UX) thời gian thực: Trong các ứng dụng AI như ChatGPT hay Gemini, việc tạo văn bản (text generation) mất thời gian. Nếu không có streaming, bạn sẽ phải nhìn màn hình chờ hàng chục giây. Streaming trả về từng "token" ngay khi nó được tạo ra, giúp bạn có thể bắt đầu đọc ngay lập tức.
+
+        - Truyền tải nội dung đa phương tiện: Khi nghe nhạc hay xem phim, bạn không cần phải tải toàn bộ file video dung lượng cao về máy. Hệ thống chia nhỏ dữ liệu và phát tới đâu tải tới đó (ví dụ: YouTube, Spotify).
+
+        - Xử lý dữ liệu thời gian thực (Real-time Analytics): Trong kỹ thuật dữ liệu (Data Engineering), streaming bắt buộc phải dùng cho các hệ thống giám sát cảnh báo:
+
+            + Phát hiện giao dịch gian lận ngân hàng ngay trong tích tắc (trước khi thẻ bị trừ tiền).
+
+            + Phân tích dữ liệu từ hàng ngàn cảm biến IoT (Internet of Things) để dự báo hỏng hóc máy móc tức thời.
+
+2. Khi nào Non-streaming lại phù hợp hơn?
+    Non-streaming (thường được gọi là Batch Processing trong xử lý dữ liệu, hoặc Caching/Download toàn bộ) là lựa chọn tối ưu khi bạn cần tính toàn vẹn của cấu trúc dữ liệu hoặc khi tối ưu hóa chi phí/tài nguyên.
+
+        - Yêu cầu tính toàn vẹn cấu trúc (Strict Formatting): Trong lập trình AI, nếu bạn gọi API của một mô hình ngôn ngữ lớn để trả về một định dạng dữ liệu nghiêm ngặt như JSON, bạn buộc phải dùng non-streaming. Hệ thống cần đợi toàn bộ chuỗi JSON được tạo xong và đóng ngoặc hợp lệ { ... } thì mới có thể phân tích cú pháp (parse) thành công.
+
+        - Xử lý dữ liệu lớn và phức tạp (Batch Processing): Khi bạn cần thực hiện các phép toán trên toàn bộ tập dữ liệu (ví dụ: huấn luyện mô hình Machine Learning, tính tổng doanh thu cuối tháng, hoặc sắp xếp toàn bộ cơ sở dữ liệu), bạn phải thu thập đủ dữ liệu trước rồi mới xử lý cùng một lúc.
+
+        - Tối ưu hóa tài nguyên mạng: Các kết nối streaming đòi hỏi máy chủ và máy khách phải duy trì một kết nối mở liên tục (persistent connection). Đối với các tác vụ chạy ngầm (background jobs) hoặc khi mạng chập chờn, việc gửi một request và đợi nhận lại toàn bộ kết quả (một lần duy nhất) sẽ ổn định và tiết kiệm tài nguyên máy chủ hơn.
 
 ## Danh Sách Kiểm Tra Nộp Bài
 - [ ] Tất cả tests pass: `pytest tests/ -v`
