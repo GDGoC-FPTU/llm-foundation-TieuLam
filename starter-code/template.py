@@ -98,11 +98,10 @@ def call_openai(
         # Lấy thông tin Token Usage
     input_tokens = response.usage.prompt_tokens
     output_tokens = response.usage.completion_tokens
-    total_tokens = response.usage.total_tokens
         
         # Trả về kết quả dưới dạng dictionary
     return {
-        "answer": answer,
+        "response_text": answer,
         "latency_seconds": round(latency, 4),
         "usage": {
             "input_tokens": input_tokens,
@@ -186,7 +185,7 @@ def call_gemini(
     
     # Trả về kết quả dưới dạng dictionary
     return {
-        "answer": answer,
+        "response_text": answer,
         "latency_seconds": round(latency, 4),
         "usage": {
             "input_tokens": input_tokens,
